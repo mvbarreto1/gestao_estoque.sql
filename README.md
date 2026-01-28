@@ -1,32 +1,22 @@
+gestao_estoque.sql
+
 Sistema de Gestão de Estoque em PostgreSQL
 
-Este projeto consiste em um sistema de gestão de estoque desenvolvido inteiramente em SQL (PostgreSQL), com foco em boas práticas de modelagem de dados, integridade referencial e uso profissional de funções, triggers e views.
+Sistema de Gestão de Estoque em PostgreSQL
 
-O sistema simula um cenário real de controle de entradas e saídas de produtos, concentrando todas as regras críticas diretamente no banco de dados, sem dependência de uma camada de aplicação. O projeto foi desenvolvido como case de portfólio, demonstrando domínio de lógica de banco de dados, regras de negócio no nível do banco e organização profissional de scripts SQL.
+Projeto de Gestão de Estoque desenvolvido inteiramente em SQL (PostgreSQL), com foco em boas práticas de modelagem de dados, integridade referencial e uso profissional de funções, triggers e views. O sistema simula um cenário real de controle de entradas e saídas de produtos, concentrando as regras críticas diretamente no banco de dados.
+
+O projeto foi desenvolvido como case de portfólio, com o objetivo de demonstrar domínio de lógica de banco de dados, implementação de regras de negócio no nível do banco e organização profissional de scripts SQL, sem dependência de uma camada de aplicação.
 
 Objetivo do Projeto
 
-Criar um sistema de estoque capaz de:
+O objetivo do projeto é criar um sistema de estoque capaz de controlar produtos e locais de armazenamento, registrar movimentações de entrada e saída e atualizar automaticamente o saldo de estoque por meio de triggers. Além disso, o sistema garante a integridade e a consistência dos dados e disponibiliza views analíticas, incluindo uma visão financeira consolidada.
 
-Controlar produtos e locais de armazenamento
-
-Registrar movimentações de entrada e saída
-
-Atualizar automaticamente o estoque por meio de trigger
-
-Garantir integridade e consistência dos dados
-
-Disponibilizar views analíticas, incluindo visão financeira
-
-Todo o controle crítico do sistema ocorre no banco de dados, garantindo previsibilidade, consistência e centralização das regras de negócio.
+Todo o controle crítico do sistema ocorre diretamente no banco de dados, assegurando previsibilidade, centralização das regras de negócio e redução de inconsistências.
 
 Tecnologias Utilizadas
 
-PostgreSQL
-
-SQL / PLpgSQL
-
-pgAdmin 4 (ambiente de testes)
+O projeto foi desenvolvido utilizando PostgreSQL como sistema gerenciador de banco de dados, com uso de SQL e PL/pgSQL para definição de tabelas, funções, triggers e views. Os testes foram realizados em ambiente local utilizando o pgAdmin 4.
 
 Estrutura do Projeto
 sql/
@@ -35,51 +25,26 @@ sql/
 ├── 03_triggers_functions.sql  # Funções e triggers
 ├── 04_views.sql               # Views analíticas
 README.md
+
+A separação dos scripts segue uma organização lógica, facilitando a leitura, manutenção e execução do projeto.
+
 Principais Entidades
 
-produtos – Cadastro de produtos
+O modelo de dados é composto pelas entidades produtos, responsáveis pelo cadastro dos itens comercializados; locais_estoque, que representam os pontos físicos de armazenamento; estoque, que mantém a quantidade atual de cada produto por local; movimentacoes, que registram o histórico de entradas e saídas; e usuarios, responsáveis pelas operações realizadas no sistema.
 
-locais_estoque – Locais físicos de armazenamento
-
-estoque – Quantidade atual por produto e local
-
-movimentacoes – Histórico de entradas e saídas
-
-usuarios – Responsáveis pelas movimentações
+Essa modelagem permite rastreabilidade completa das movimentações e consistência das informações armazenadas.
 
 Arquitetura de Regras de Negócio
-Atualização de Estoque (Ponto-chave do Projeto)
 
-A atualização do estoque segue uma arquitetura limpa e centralizada no banco de dados.
+A atualização do estoque segue uma arquitetura limpa e centralizada no banco de dados. A função registrar_movimentacao é responsável por validar os dados de entrada e registrar a movimentação na tabela movimentacoes, sem alterar diretamente o saldo de estoque.
 
-A função registrar_movimentacao é responsável por:
+A atualização efetiva do estoque é realizada exclusivamente pelo trigger trg_atualiza_estoque, que é acionado após a inserção de uma movimentação. Esse trigger decide automaticamente se deve realizar um INSERT ou UPDATE na tabela estoque, garantindo que toda movimentação tenha impacto direto e consistente no saldo armazenado.
 
-Validar os dados de entrada
-
-Registrar a movimentação na tabela movimentacoes
-
-O trigger trg_atualiza_estoque:
-
-É o único responsável por atualizar a tabela estoque
-
-Decide automaticamente entre INSERT ou UPDATE
-
-Garante que toda movimentação tenha reflexo direto no estoque
-
-Essa abordagem evita duplicidade de regras e garante previsibilidade no comportamento do sistema.
+Essa abordagem evita duplicidade de regras, reduz erros e garante previsibilidade no comportamento do sistema.
 
 Função Principal
-registrar_movimentacao(...)
 
-Responsável por registrar qualquer entrada ou saída de produto.
-
-Características:
-
-Validação do tipo de movimentação (ENTRADA / SAIDA)
-
-Registro do usuário responsável
-
-Não altera o estoque diretamente (responsabilidade do trigger)
+A função registrar_movimentacao(...) é responsável por registrar qualquer entrada ou saída de produto no sistema. Ela valida o tipo de movimentação (ENTRADA ou SAIDA), registra o usuário responsável e delega a atualização do estoque ao trigger, mantendo uma separação clara de responsabilidades.
 
 Exemplo de uso:
 
@@ -93,80 +58,32 @@ SELECT registrar_movimentacao(
 );
 Trigger de Atualização de Estoque
 
-Executado AFTER INSERT na tabela movimentacoes.
-
-Regras aplicadas:
-
-Se o estoque existir → UPDATE
-
-Se o estoque não existir → INSERT
-
-Essa lógica garante que nunca haja movimentação sem impacto no estoque.
+O trigger de atualização de estoque é executado AFTER INSERT na tabela movimentacoes. Caso já exista um registro de estoque para o produto e local informados, o sistema realiza um UPDATE; caso contrário, um novo registro é criado por meio de INSERT. Essa lógica garante que nunca haja movimentações sem reflexo no estoque.
 
 Views Criadas
-View de Estoque Atual
 
-Apresenta:
-
-Produto
-
-Local de estoque
-
-Quantidade atual
-
-View Financeira
-
-Apresenta:
-
-Total de entradas
-
-Total de saídas
-
-Saldo financeiro por produto
-
-Essas views simulam relatórios utilizados por áreas administrativas e financeiras.
+O projeto disponibiliza uma view de estoque atual, que apresenta o produto, o local de armazenamento e a quantidade disponível, além de uma view financeira, que consolida o total de entradas, total de saídas e o saldo financeiro por produto. Essas views simulam relatórios utilizados por áreas administrativas e financeiras em ambientes corporativos.
 
 Testes
 
-O projeto foi testado com os seguintes cenários:
-
-Entradas sucessivas de produtos
-
-Saídas com validação de saldo disponível
-
-Criação automática de estoque inexistente
-
-Registro de usuário responsável pela movimentação
+O sistema foi testado com entradas sucessivas de produtos, saídas com validação de saldo disponível, criação automática de registros de estoque inexistentes e registro do usuário responsável por cada movimentação, garantindo consistência e confiabilidade dos dados.
 
 Como Executar o Projeto
 
-Crie um banco de dados no PostgreSQL
-
-Execute os scripts na seguinte ordem:
+Para executar o projeto, é necessário criar um banco de dados no PostgreSQL e executar os scripts SQL na seguinte ordem:
 
 01_schema.sql
-
-02_dados_base.sql (opcional)
-
+02_dados_base.sql  -- opcional
 03_triggers_functions.sql
-
 04_views.sql
 
-Utilize a função registrar_movimentacao para operar o sistema
+Após a execução dos scripts, o sistema pode ser operado por meio da função registrar_movimentacao.
 
 Diferenciais do Projeto
 
-Regras críticas implementadas diretamente no banco
+O projeto se destaca pela implementação das regras críticas diretamente no banco de dados, uso profissional de triggers e funções, tratamento de cenários reais como estoque inexistente e organização clara e documentada dos scripts. Trata-se de um case sólido de SQL, adequado para portfólio profissional.
 
-Uso profissional de triggers e funções
-
-Tratamento de cenários reais (estoque inexistente)
-
-Código organizado, modular e documentado
-
-Ideal como case SQL para portfólio profissional
-
-Considerações Finais
+Observações Finais
 
 Este projeto foi desenvolvido com foco em qualidade, clareza e boas práticas, simulando demandas comuns do mercado em sistemas de controle de estoque e demonstrando domínio de SQL em nível profissional.
 
